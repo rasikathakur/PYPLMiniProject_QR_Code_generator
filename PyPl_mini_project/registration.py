@@ -1,13 +1,9 @@
 from tkinter import *
-from tkinter import ttk, filedialog, messagebox
+from tkinter import ttk, filedialog
 from PIL import Image, ImageTk
 import pandas as pd
 import qrcode
 import os
-
-qr_folder = 'qr_codes'
-os.makedirs(qr_folder, exist_ok=True)
-
 
 class Register:
     def __init__(self, root):
@@ -78,9 +74,6 @@ class Register:
 
     def upload_photo(self):
         file_path = filedialog.askopenfilename(title="Select Photo", filetypes=[("Image files", "*.png;*.jpg;*.jpeg")])
-        self.photo_path = file_path  # Store the photo path
-
-        # Update layout with the selected photo
         self.update_layout(file_path)
 
     def update_layout(self, file_path):
@@ -111,98 +104,77 @@ class Register:
 
     def submit_form(self):
         # Extracting data from the form
-        first_name = self.txt_fname.get().strip()
-        last_name = self.txt_lname.get().strip()
-        contact_no = self.txt_contact.get().strip()
-        email = self.txt_email.get().strip()
+        first_name = self.txt_fname.get()
+        last_name = self.txt_lname.get()
+        contact_no = self.txt_contact.get()
+        email = self.txt_email.get()
         selected_class = self.txt_cls.get()
         selected_dept = self.txt_dept.get()
         selected_blood_group = self.txt_bgrp.get()
         selected_division = self.txt_div.get()
-        crn = self.txt_crn.get().strip()
-
-        # Validation checks
-        if not (first_name and last_name and contact_no and email and selected_class != "Select" and
-                selected_dept != "Select" and selected_blood_group != "Select" and selected_division != "Select" and crn):
-            messagebox.showerror("Error", "Please fill in all the fields")
-            return
-
-        if len(contact_no) != 10 or not contact_no.isdigit():
-            messagebox.showerror("Error", "Contact number should be 10 digits")
-            return
-
-        if '@' not in email or '.' not in email:
-            messagebox.showerror("Error", "Invalid email format")
-            return
+        crn = self.txt_crn.get()
 
         # Generating ID Card details
-        id_card_details = {
-            'First Name': first_name,
-            'Last Name': last_name,
-            'Contact No.': contact_no,
-            'Email': email,
-            'Class': selected_class,
-            'Branch': selected_dept,
-            'Blood Group': selected_blood_group,
-            'Division': selected_division,
-            'CRN': crn,
-            'Photo Path': self.photo_path  # Use stored photo path here
-        }
+        id_card_details = f"""
+        ID Card Details:
+        -------------------------
+        Name: {first_name} {last_name}
+        Contact No.: {contact_no}
+        Email: {email}
+        Class: {selected_class}
+        Branch: {selected_dept}
+        Blood Group: {selected_blood_group}
+        Division: {selected_division}
+        CRN: {crn}
+        """
 
         # Save the ID card details to a CSV file
-        self.save_to_csv(id_card_details)
+        csv_data = {
+            'First Name': [first_name],
+            'Last Name': [last_name],
+            'Contact No.': [contact_no],
+            'Email': [email],
+            'Class': [selected_class],
+            'Branch': [selected_dept],
+            'Blood Group': [selected_blood_group],
+            'Division': [selected_division],
+            'CRN': [crn]
+        }
+
+        df = pd.DataFrame(csv_data)
+        csv_file_path = 'id_card_details.csv'
+        df.to_csv(csv_file_path, index=False)
 
         # Generate and save QR code
-        self.generate_qr_code(crn, id_card_details)
-
-
-    def generate_qr_code(self, crn, data):
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
             box_size=10,
             border=4,
         )
-
-        # Add data to the QR code
-        qr.add_data(str(data))
+        qr.add_data(id_card_details)
         qr.make(fit=True)
 
-        # Create an image from the QR Code instance
-        img = qr.make_image(fill_color="black", back_color="white")
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        qr_img.save('qrcode.png')
 
-        # Save the QR code image
-        qr_path = f"qr_codes/qr_{crn}.png"
-        img.save(qr_path)
+        # Open a new window with ID card details and QR code
+        self.open_id_card_window(id_card_details, 'qrcode.png')
 
-        # Print a message to the console
-        print(f"QR Code created successfully: {qr_path}")
+    def open_id_card_window(self, id_card_details, qrcode_image_path):
+        id_card_window = Toplevel(self.root)
+        id_card_window.title("ID Card Details")
+        id_card_window.geometry("600x800")
 
+        # Display ID card details
+        id_card_label = Label(id_card_window, text=id_card_details, font=("times new roman", 14), justify=LEFT)
+        id_card_label.pack(pady=20)
 
-
-
-    def save_to_csv(self, data):
-        csv_file_path = 'id_card_details.csv'
-
-        # Check if the CSV file already exists
-        if not os.path.exists(csv_file_path):
-            # Create a new CSV file with header if it doesn't exist
-            with open(csv_file_path, 'w', newline='') as file:
-                writer = csv.DictWriter(file, fieldnames=data.keys())
-                writer.writeheader()
-
-        # Read existing CSV file or create a new DataFrame
-        if os.path.exists(csv_file_path):
-            df = pd.read_csv(csv_file_path)
-        else:
-            df = pd.DataFrame()
-
-        # Convert the 'data' dictionary to a DataFrame and append it
-        data_df = pd.DataFrame([data])
-        df = pd.concat([df, data_df], ignore_index=True)
-
-        # Save the DataFrame to the CSV file
-        df.to_csv(csv_file_path, index=False)
+        # Display QR code
+        qr_code_img = ImageTk.PhotoImage(file=qrcode_image_path)
+        qr_code_label = Label(id_card_window, image=qr_code_img)
+        qr_code_label.image = qr_code_img
+        qr_code_label.pack(pady=20)
 
 # Create the main Tk() instance outside the class
 root = Tk()

@@ -1,13 +1,14 @@
 from tkinter import *
-from tkinter import ttk, filedialog, messagebox
-from PIL import Image, ImageTk, ImageDraw, ImageFont
+from tkinter import ttk, filedialog
+from PIL import Image, ImageTk
 import pandas as pd
+import qrcode
 import os
 
 class Register:
     def __init__(self, root):
         self.root = root
-        self.root.title("ID Card Viewer")
+        self.root.title("Your ID is here!")
         self.root.geometry("1350x700+0+0")
         self.root.config(bg="purple")
 
@@ -23,63 +24,52 @@ class Register:
 
         title = Label(frame1, text="ID CARD", font=("times new roman", 20, "bold"), bg="white", fg="purple").place(x=50, y=30)
 
-        # PRN Label and Entry
-        prn_label = Label(frame1, text="Enter PRN:", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=50, y=70)
-        self.txt_prn = Entry(frame1, font=("times new roman", 15), bg="lightgray")
-        self.txt_prn.place(x=180, y=70, width=120)
+        # Load data from CSV file
+        df = pd.read_csv('id_card_details.csv')
 
-        # Initialize empty data frame
-        self.df = pd.DataFrame()
+        f_name = Label(frame1, text="First Name", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=50, y=100)
+        self.txt_fname = Label(frame1, text=df['First Name'][0], font=("times new roman", 15, "bold"), bg="purple", fg="purple")
+        self.txt_fname.place(x=50, y=130, width=250)
+
+        l_name = Label(frame1, text="Last Name", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=370, y=100)
+        self.txt_lname = Label(frame1, text=df['Last Name'][0], font=("times new roman", 15, "bold"), bg="white", fg="purple")
+        self.txt_lname.place(x=370, y=130, width=250)
+
+        contact = Label(frame1, text="Contact No.", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=50, y=170)
+        self.txt_contact = Label(frame1, text=df['Contact No.'][0], font=("times new roman", 15, "bold"), bg="white", fg="purple")
+        self.txt_contact.place(x=50, y=200, width=250)
+
+        email = Label(frame1, text="Email", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=370, y=170)
+        self.txt_email = Label(frame1, text=df['Email'][0], font=("times new roman", 15, "bold"), bg="white", fg="purple")
+        self.txt_email.place(x=370, y=200, width=250)
+
+        clss = Label(frame1, text="Class", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=50, y=240)
+        self.txt_cls = Label(frame1, text=df['Class'][0], font=("times new roman", 15, "bold"), bg="white", fg="purple")
+        self.txt_cls.place(x=50, y=270, width=250)
+
+        dept = Label(frame1, text="Branch", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=370, y=240)
+        self.txt_dept = Label(frame1, text=df['Branch'][0], font=("times new roman", 15, "bold"), bg="white", fg="purple")
+        self.txt_dept.place(x=370, y=270, width=250)
+
+        bgrp = Label(frame1, text="Blood Group", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=50, y=310)
+        self.txt_bgrp = Label(frame1, text=df['Blood Group'][0], font=("times new roman", 15, "bold"), bg="white", fg="purple")
+        self.txt_bgrp.place(x=50, y=340, width=250)
+
+        div = Label(frame1, text="Division", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=370, y=310)
+        self.txt_div = Label(frame1, text=df['Division'][0], font=("times new roman", 15, "bold"), bg="white", fg="purple")
+        self.txt_div.place(x=370, y=340, width=250)
+
+        crn = Label(frame1, text="CRN", font=("times new roman", 15, "bold"), bg="white", fg="gray").place(x=50, y=380)
+        self.txt_crn = Label(frame1, text=df['CRN'][0], font=("times new roman", 15, "bold"), bg="white", fg="purple")
+        self.txt_crn.place(x=50, y=410, width=250)
 
         # Print button
-        print_btn = ttk.Button(frame1, text="Print", command=self.print_id_card, style="TButton",)
-        print_btn.place(x=50, y=100, width=250)
+        submit_btn = ttk.Button(frame1, text="Print", command=self.submit_form, style="TButton",)
+        submit_btn.place(x=50, y=450, width=250)
 
-    def print_id_card(self):
-        prn = self.txt_prn.get().strip()
-
-        if not prn:
-            messagebox.showerror("Error", "Please enter PRN number")
-            return
-
-        # Load data from CSV file
-        self.df = pd.read_csv('id_card_details.csv')
-
-        # Filter data based on the entered PRN number
-        filtered_data = self.df[self.df['CRN'].astype(str) == prn]
-
-        if not filtered_data.empty:
-            # Display the details if PRN number is found
-            self.create_id_card(filtered_data)
-        else:
-            messagebox.showerror("Error", "PRN not found")
-
-    def create_id_card(self, data):
-        # Create a new image with "bg6.jpg" as the base
-        img_bg = Image.open("bg6.jpg")
-        img = Image.new("RGBA", (700, 500), color=(255, 255, 255, 0))
-        img.paste(img_bg, (0, 0))
-
-        # Draw text on the image with the ID card details
-        draw = ImageDraw.Draw(img)
-        font = ImageFont.load_default()  # You can customize the font as needed
-
-        draw.text((50, 130), f"Name: {data['First Name'].iloc[0]} {data['Last Name'].iloc[0]}", font=font, fill=(128, 0, 128))
-        draw.text((50, 200), f"Contact No.: {data['Contact No.'].iloc[0]}", font=font, fill=(128, 0, 128))
-        draw.text((50, 270), f"Email: {data['Email'].iloc[0]}", font=font, fill=(128, 0, 128))
-        draw.text((50, 340), f"Class: {data['Class'].iloc[0]}", font=font, fill=(128, 0, 128))
-
-        # Check if 'CRN' is present in the DataFrame
-        if 'CRN' in data.columns:
-            draw.text((50, 410), f"CRN: {data['CRN'].iloc[0]}", font=font, fill=(128, 0, 128))
-        elif 'CRN_x' in data.columns:
-            draw.text((50, 410), f"CRN: {data['CRN_x'].iloc[0]}", font=font, fill=(128, 0, 128))
-        else:
-            messagebox.showerror("Error", "CRN column not found in DataFrame")
-
-        # Save the image to a specified location
-        img.save("id_card_image.png")
-        print("ID card image saved successfully.")
+    def submit_form(self):
+        # Placeholder function for the print action
+        print("Printing...")
 
 # Create the main Tk() instance outside the class
 root = Tk()
